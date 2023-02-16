@@ -5,6 +5,7 @@
     viewBox="0 0 271.953 271.953"
     style="enable-background:new 0 0 271.953 271.953; margin: 12px"
     xml:space="preserve"
+    aria-hidden="true"
   >
     <g>
       <g>

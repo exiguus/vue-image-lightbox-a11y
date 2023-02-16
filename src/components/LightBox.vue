@@ -1,5 +1,11 @@
 <template>
-  <div @click.stop="closeLightBox">
+  <div
+    ref="dialog"
+    role="dialog"
+    aria-modal="false"
+    aria-hidden="true"
+    @click.stop="closeLightBox"
+  >
     <transition
       mode="out-in"
       name="vue-lb-content-transition"
@@ -16,36 +22,34 @@
           <div class="vue-lb-header">
             <span />
             <button
+              tabindex="0"
               v-if="closable"
               type="button"
               :title="closeText"
               class="vue-lb-button-close"
             >
+              <span class="sr-only">{{ closeText }}</span>
               <slot name="close">
                 <CloseIcon />
               </slot>
-            </button> <!-- .vue-lb-button-close -->
-          </div> <!-- .vue-lb-header -->
-          <div
-            class="vue-lb-figure"
-            @click.stop
-          >
-            <transition
-              mode="out-in"
-              :name="modalImageTransitionName"
-            >
+            </button>
+            <!-- .vue-lb-button-close -->
+          </div>
+          <!-- .vue-lb-header -->
+          <figure tabindex="1" ref="figure" class="vue-lb-figure" @click.stop>
+            <transition mode="out-in" :name="modalImageTransitionName">
               <img
                 v-if="media[select].type !== 'video'"
                 :key="media[select].src"
                 v-lazy="{
                   src: media[select].src,
                   loading: media[select].src,
-                  error: media[select].src,
+                  error: media[select].src
                 }"
                 :srcset="media[select].srcset || ''"
                 class="vue-lb-modal-image"
-                :alt="media[select].caption"
-              >
+                :alt="media[select].caption | strippedContent"
+              />
               <video
                 v-else
                 ref="video"
@@ -60,41 +64,34 @@
                   :key="source.src"
                   :src="source.src"
                   :type="source.type"
-                >
+                />
               </video>
             </transition>
 
             <slot name="customCaption">
-              <div
+              <figCaption
                 v-show="showCaption"
                 class="vue-lb-info"
                 v-html="media[select].caption"
               />
             </slot>
 
-            <div class="vue-lb-footer">
+            <div tabindex="-1" aria-hidden="true" class="vue-lb-footer">
               <div class="vue-lb-footer-info" />
-              <div
-                v-show="showFooterCount"
-                class="vue-lb-footer-count"
-              >
-                <slot
-                  name="footer"
-                  :current="select + 1"
-                  :total="media.length"
-                >
+              <div v-show="showFooterCount" class="vue-lb-footer-count">
+                <slot name="footer" :current="select + 1" :total="media.length">
                   {{ select + 1 }} / {{ media.length }}
                 </slot>
               </div>
             </div>
-          </div>
-        </div> <!-- .vue-lb-content -->
-        <div class="vue-lb-thumbnail-wrapper">
-          <div
-            v-if="showThumbs"
-            class="vue-lb-thumbnail"
-          >
+          </figure>
+        </div>
+        <!-- .vue-lb-content -->
+        <div tabindex="-1" aria-hidden="true" class="vue-lb-thumbnail-wrapper">
+          <div v-if="showThumbs" class="vue-lb-thumbnail">
             <button
+              tabindex="-1"
+              aria-hidden="true"
               v-if="media.length > 1"
               type="button"
               class="vue-lb-thumbnail-arrow vue-lb-thumbnail-left"
@@ -109,20 +106,25 @@
             <div
               v-for="(image, index) in imagesThumb"
               v-show="index >= thumbIndex.begin && index <= thumbIndex.end"
-              :key="typeof image.src === 'string' ? `${image.src}${index}` : index"
+              :key="
+                typeof image.src === 'string' ? `${image.src}${index}` : index
+              "
               v-lazy:background-image="image"
-              :class="'vue-lb-modal-thumbnail' + (select === index ? '-active' : '')"
+              :class="
+                'vue-lb-modal-thumbnail' + (select === index ? '-active' : '')
+              "
               @click.stop="showImage(index)"
+              tabindex="-1"
+              aria-hidden="true"
             >
-              <slot
-                v-if="image.type"
-                name="videoIcon"
-              >
+              <slot v-if="image.type" name="videoIcon">
                 <VideoIcon />
               </slot>
             </div>
 
             <button
+              tabindex="-1"
+              aria-hidden="true"
               v-if="media.length > 1"
               type="button"
               class="vue-lb-thumbnail-arrow vue-lb-thumbnail-right"
@@ -133,46 +135,62 @@
                 <RightArrowIcon />
               </slot>
             </button>
-          </div> <!-- .vue-lb-thumbnail -->
+          </div>
+          <!-- .vue-lb-thumbnail -->
         </div>
         <button
+          tabindex="3"
           v-if="media.length > 1"
           type="button"
           class="vue-lb-arrow vue-lb-left"
           :title="previousText"
           @click.stop="previousImage()"
         >
+          <span class="sr-only">{{ previousText }}</span>
           <slot name="previous">
             <LeftArrowIcon />
           </slot>
         </button>
 
         <button
+          tabindex="2"
           v-if="media.length > 1"
           type="button"
           class="vue-lb-arrow vue-lb-right"
           :title="nextText"
           @click.stop="nextImage()"
         >
+          <span class="sr-only">{{ nextText }}</span>
           <slot name="next">
             <RightArrowIcon />
           </slot>
         </button>
-      </div> <!-- .vue-lb-container -->
+
+        <button
+          tabindex="4"
+          v-if="closable"
+          type="button"
+          :title="closeText"
+          class="vue-lb-button-close-end sr-only"
+        >
+          {{ closeText }}
+        </button>
+      </div>
+      <!-- .vue-lb-container -->
     </transition>
   </div>
 </template>
 
 <script>
-import LeftArrowIcon from './LeftArrowIcon'
-import RightArrowIcon from './RightArrowIcon'
-import CloseIcon from './CloseIcon'
-import VideoIcon from './VideoIcon'
+import LeftArrowIcon from "./LeftArrowIcon";
+import RightArrowIcon from "./RightArrowIcon";
+import CloseIcon from "./CloseIcon";
+import VideoIcon from "./VideoIcon";
 
-let Hammer
+let Hammer;
 
-if (typeof window !== 'undefined') {
-  Hammer = require('hammerjs')
+if (typeof window !== "undefined") {
+  Hammer = require("hammerjs");
 }
 
 export default {
@@ -180,104 +198,104 @@ export default {
     LeftArrowIcon,
     RightArrowIcon,
     CloseIcon,
-    VideoIcon,
+    VideoIcon
   },
 
   props: {
     media: {
       type: Array,
-      required: true,
+      required: true
     },
 
     disableScroll: {
       type: Boolean,
-      default: true,
+      default: true
     },
 
     disableZoom: {
       type: Boolean,
-      default: true,
+      default: true
     },
 
     showLightBox: {
       type: Boolean,
-      default: true,
+      default: true
     },
 
     closable: {
       type: Boolean,
-      default: true,
+      default: true
     },
 
     startAt: {
       type: Number,
-      default: 0,
+      default: 0
     },
 
     nThumbs: {
       type: Number,
-      default: 7,
+      default: 7
     },
 
     showThumbs: {
       type: Boolean,
-      default: true,
+      default: true
     },
 
     showFooterCount: {
       type: Boolean,
-      default: true,
+      default: true
     },
 
     // Mode
     autoPlay: {
       type: Boolean,
-      default: false,
+      default: false
     },
 
     autoPlayTime: {
       type: Number,
-      default: 3000,
+      default: 3000
     },
 
     siteLoading: {
       type: String,
-      default: '',
+      default: ""
     },
 
     showCaption: {
       type: Boolean,
-      default: false,
+      default: false
     },
 
     lengthToLoadMore: {
       type: Number,
-      default: 0,
+      default: 0
     },
 
     closeText: {
       type: String,
-      default: 'Close (Esc)',
+      default: "Close (Esc)"
     },
 
     previousText: {
       type: String,
-      default: 'Previous',
+      default: "Previous"
     },
 
     nextText: {
       type: String,
-      default: 'Next',
+      default: "Next"
     },
 
     previousThumbText: {
       type: String,
-      default: 'Previous',
+      default: "Previous"
     },
 
     nextThumbText: {
       type: String,
-      default: 'Next',
+      default: "Next"
     },
 
     resetSelectedOnClose: {
@@ -286,35 +304,47 @@ export default {
     }
   },
 
+  filters: {
+    strippedContent: function(str) {
+      let content = "";
+      try {
+        content = str.replace(/<\/?[^>]+>/gi, " ").trim();
+      } catch (e) {
+        content = JSON.stringify(str || "");
+      }
+      return content;
+    }
+  },
+
   data() {
     return {
       select: this.startAt,
       lightBoxOn: this.showLightBox,
       timer: null,
-      modalImageTransitionName: 'vue-lb-modal-image-no-transition',
-    }
+      modalImageTransitionName: "vue-lb-modal-image-no-transition"
+    };
   },
 
   computed: {
     thumbIndex() {
-      const halfDown = Math.floor(this.nThumbs / 2)
+      const halfDown = Math.floor(this.nThumbs / 2);
 
       if (this.select >= halfDown && this.select < this.media.length - halfDown)
         return {
           begin: this.select - halfDown + (1 - (this.nThumbs % 2)),
-          end: this.select + halfDown,
-        }
+          end: this.select + halfDown
+        };
 
       if (this.select < halfDown)
         return {
           begin: 0,
-          end: this.nThumbs - 1,
-        }
+          end: this.nThumbs - 1
+        };
 
       return {
         begin: this.media.length - this.nThumbs,
-        end: this.media.length - 1,
-      }
+        end: this.media.length - 1
+      };
     },
 
     imagesThumb() {
@@ -323,151 +353,198 @@ export default {
           src: thumb,
           type,
           loading: this.siteLoading,
-          error: this.siteLoading,
-        }))
+          error: this.siteLoading
+        }));
       }
 
       return this.media.map(({ thumb, type }) => ({
         src: thumb,
-        type,
-      }))
+        type
+      }));
     }
   },
 
   watch: {
     lightBoxOn(value) {
       if (document != null) {
-        this.onToggleLightBox(value)
+        this.onToggleLightBox(value);
       }
     },
 
     select() {
-      this.$emit('onImageChanged', this.select)
+      this.$emit("onImageChanged", this.select);
 
       if (this.select >= this.media.length - this.lengthToLoadMore - 1)
-        this.$emit('onLoad')
+        this.$emit("onLoad");
 
-      if (this.select === this.media.length - 1)
-        this.$emit('onLastIndex')
+      if (this.select === this.media.length - 1) this.$emit("onLastIndex");
 
-      if (this.select === 0)
-        this.$emit('onFirstIndex')
+      if (this.select === 0) this.$emit("onFirstIndex");
 
-      if (this.select === this.startAt)
-        this.$emit('onStartIndex')
-    },
+      if (this.select === this.startAt) this.$emit("onStartIndex");
+    }
   },
 
   mounted() {
     if (this.autoPlay) {
       this.timer = setInterval(() => {
-        this.nextImage()
-      }, this.autoPlayTime)
+        this.nextImage();
+      }, this.autoPlayTime);
     }
 
-    this.onToggleLightBox(this.lightBoxOn)
+    this.onToggleLightBox(this.lightBoxOn);
 
     if (this.$refs.container) {
-      const options = {}
+      const options = {};
       if (!this.disableZoom) {
-        options.touchAction = 'pan-x, pan-y'
+        options.touchAction = "pan-x, pan-y";
       }
 
-      const hammer = new Hammer(this.$refs.container, options)
-      hammer.on('swiperight', () => {
-        this.previousImage()
-      })
+      const hammer = new Hammer(this.$refs.container, options);
+      hammer.on("swiperight", () => {
+        this.previousImage();
+      });
 
-      hammer.on('swipeleft', () => {
-        this.nextImage()
-      })
+      hammer.on("swipeleft", () => {
+        this.nextImage();
+      });
     }
   },
 
   beforeDestroy() {
-    document.removeEventListener('keydown', this.addKeyEvent)
+    if (this.$refs.dialog) {
+      this.$refs.dialog.setAttribute("tabindex", "0");
+      this.$refs.dialog.setAttribute("aria-modal", "true");
+      this.$refs.dialog.setAttribute("aria-hidden", "false");
+    }
+
+    document.removeEventListener("keydown", this.addKeyEvent);
 
     if (this.autoPlay) {
-      clearInterval(this.timer)
+      clearInterval(this.timer);
     }
   },
 
   methods: {
     onLightBoxOpen() {
-      this.$emit('onOpened')
+      this.$emit("onOpened");
 
       if (this.resetSelectedOnClose) {
-        this.select = this.startAt
+        this.select = this.startAt;
       }
 
       if (this.disableScroll) {
-        document.querySelector('html').classList.add('no-scroll')
+        document.querySelector("html").classList.add("no-scroll");
       }
-      document.querySelector('body').classList.add('vue-lb-open')
-      document.addEventListener('keydown', this.addKeyEvent)
+      document.querySelector("body").classList.add("vue-lb-open");
+      document.addEventListener("keydown", this.addKeyEvent);
 
       if (this.$refs.video && this.$refs.video.autoplay) {
-        this.$refs.video.play()
+        this.$refs.video.play();
       }
+
+      this.$nextTick(() => {
+        if (this.$refs.dialog) {
+          this.$refs.dialog.setAttribute("tabindex", "0");
+          this.$refs.dialog.setAttribute("aria-modal", "true");
+          this.$refs.dialog.setAttribute("aria-hidden", "false");
+        }
+        if (this.$refs.figure) {
+          this.$refs.figure.classList.add("focus");
+          this.$refs.figure.focus();
+        }
+      });
     },
 
     onLightBoxClose() {
-      this.$emit('onClosed')
+      this.$emit("onClosed");
 
       if (this.disableScroll) {
-        document.querySelector('html').classList.remove('no-scroll')
+        document.querySelector("html").classList.remove("no-scroll");
       }
 
-      document.querySelector('body').classList.remove('vue-lb-open')
-      document.removeEventListener('keydown', this.addKeyEvent)
+      document.querySelector("body").classList.remove("vue-lb-open");
+      document.removeEventListener("keydown", this.addKeyEvent);
 
       if (this.$refs.video) {
-        this.$refs.video.pause()
-        this.$refs.video.currentTime = 0
+        this.$refs.video.pause();
+        this.$refs.video.currentTime = 0;
       }
+
+      this.$nextTick(() => {
+        if (this.$refs.dialog) {
+          this.$refs.dialog.removeAttribute("tabindex");
+          this.$refs.dialog.setAttribute("aria-modal", "false");
+          this.$refs.dialog.setAttribute("aria-hidden", "true");
+        }
+      });
     },
 
     onToggleLightBox(value) {
       if (value) {
-        this.onLightBoxOpen()
+        this.onLightBoxOpen();
       } else {
-        this.onLightBoxClose()
+        this.onLightBoxClose();
       }
     },
 
     showImage(index) {
-      this.$set(this, 'select', index)
-      this.$set(this, 'lightBoxOn', true)
+      this.$set(this, "select", index);
+      this.$set(this, "lightBoxOn", true);
     },
 
     addKeyEvent(event) {
-      if (event.keyCode === 37) this.previousImage() // left arrow
-      if (event.keyCode === 39) this.nextImage() // right arrow
-      if (event.keyCode === 27) this.closeLightBox() // esc
+      if (event.keyCode === 37) this.previousImage(); // left arrow
+      if (event.keyCode === 39) this.nextImage(); // right arrow
+      if (event.keyCode === 27) this.closeLightBox(); // esc
     },
 
     closeLightBox() {
-      if (!this.closable) return
-      this.$set(this, 'lightBoxOn', false)
+      if (!this.closable) return;
+      this.$set(this, "lightBoxOn", false);
     },
 
     nextImage() {
-      this.$set(this, 'select', (this.select + 1) % this.media.length)
+      this.$set(this, "select", (this.select + 1) % this.media.length);
+      this.$nextTick(() => {
+        if (this.$refs.figure) {
+          this.$refs.figure.classList.add("focus");
+          this.$refs.figure.focus();
+        }
+      });
     },
 
     previousImage() {
-      this.$set(this, 'select', (this.select + this.media.length - 1) % this.media.length)
+      this.$set(
+        this,
+        "select",
+        (this.select + this.media.length - 1) % this.media.length
+      );
+      this.$nextTick(() => {
+        if (this.$refs.figure) {
+          this.$refs.figure.classList.add("focus");
+          this.$refs.figure.focus();
+        }
+      });
     },
 
     enableImageTransition() {
-      this.$set(this, 'modalImageTransitionName', 'vue-lb-modal-image-transition')
+      this.$set(
+        this,
+        "modalImageTransitionName",
+        "vue-lb-modal-image-transition"
+      );
     },
 
     disableImageTransition() {
-      this.$set(this, 'modalImageTransitionName', 'vue-lb-modal-image-no-transition')
-    },
-  },
-}
+      this.$set(
+        this,
+        "modalImageTransitionName",
+        "vue-lb-modal-image-no-transition"
+      );
+    }
+  }
+};
 </script>
 
 <style src="./style.css"></style>

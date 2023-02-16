@@ -1,5 +1,5 @@
 <template>
-  <span>
+  <span aria-hidden="true">
     <svg
       fill="white"
       x="0px"

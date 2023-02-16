@@ -1,4 +1,25 @@
 # vue-image-lightbox
+
+clone of _vue-image-lightbox_ with small adjustments to support keyboard navigation and screen readers like JAWS or NVDA.
+
+```javascript
+<lightbox
+    ref="lightbox-${id}"
+    close-text="${message(code: 'a11y.lightbox.button.close.text')}"
+    previous-text="${message(code: 'a11y.lightbox.button.previous.text')}"
+    next-text="${message(code: 'a11y.lightbox.button.next.text')}"
+    previous-thumb-text="${message(code: 'a11y.lightbox.button.previous.text')}"
+    next-thumb-text="${message(code: 'a11y.lightbox.button.next.text')}}"
+    :show-light-box="false"
+    :show-caption="true"
+    :media="media"
+></lightbox>
+```
+
+Original README.md from <https://github.com/pexea12/vue-image-lightbox>:
+
+----
+
 A simple image/video lightbox component for Vuejs
 [NPM Package](https://www.npmjs.com/package/vue-image-lightbox)
 
